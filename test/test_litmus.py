@@ -12,7 +12,6 @@ testdir = os.path.abspath(os.path.dirname(__file__))
 litmus_dist = os.path.join(testdir, 'litmus-0.13')
 sys.path.insert(0, os.path.join(testdir, '..'))
 
-import pywebdav.server.server
 
 # Run davserver
 user = 'test'
@@ -29,7 +28,6 @@ class Test(unittest.TestCase):
             os.path.join(litmus_dist, "htdocs", "foo"),
             os.path.join(self.rundir, "foo"))
 
-
     def _ensure_litmus(self):
         self.litmus = os.path.join(litmus_dist, 'litmus')
         if not os.path.exists(self.litmus):
@@ -43,7 +41,6 @@ class Test(unittest.TestCase):
             assert ret == 0
             ret = subprocess.call(['make'], cwd=litmus_dist)
             assert ret == 0
-            litmus = os.path.join(litmus_dist, 'litmus')
             assert os.path.exists(self.litmus)
 
     def tearDown(self):
@@ -54,12 +51,12 @@ class Test(unittest.TestCase):
 
         result = []
         errors = []
-        proc = None
         try:
             print('Starting davserver')
             davserver_cmd = [
                     sys.executable,
-                    os.path.join(testdir, '..', 'pywebdav', 'server', 'server.py'),
+                    os.path.join(
+                        testdir, '..', 'pywebdav', 'server', 'server.py'),
                     '-D', self.rundir,
                     '-u', user,
                     '-p', password,
@@ -73,7 +70,8 @@ class Test(unittest.TestCase):
             print('Running litmus')
             try:
                 ret = subprocess.run(
-                        [self.litmus, "-k", 'http://localhost:%d' % port, user, password],
+                        [self.litmus, "-k", 'http://localhost:%d' % port, user,
+                         password],
                         capture_output=True,
                         check=True,
                         env=dict(
@@ -89,7 +87,7 @@ class Test(unittest.TestCase):
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
-                if len(re.findall('^ *\d+\.', line)):
+                if len(re.findall(r'^ *\d+\.', line)):
                     if not line.endswith('pass'):
                         errors.append(line)
 
@@ -103,17 +101,16 @@ class Test(unittest.TestCase):
                 len(list(filter(lambda x: " SKIPPED" in x, errors))),
                 ) + "\n".join(errors))
 
-
     def test_run_litmus_noauth(self):
 
         result = []
         errors = []
-        proc = None
         try:
             print('Starting davserver')
             davserver_cmd = [
                     sys.executable,
-                    os.path.join(testdir, '..', 'pywebdav', 'server', 'server.py'),
+                    os.path.join(
+                        testdir, '..', 'pywebdav', 'server', 'server.py'),
                     '-D', self.rundir,
                     '-n',
                     '-H', 'localhost',
@@ -142,7 +139,7 @@ class Test(unittest.TestCase):
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
-                if len(re.findall('^ *\d+\.', line)):
+                if len(re.findall(r'^ *\d+\.', line)):
                     if not line.endswith('pass'):
                         errors.append(line)
 
