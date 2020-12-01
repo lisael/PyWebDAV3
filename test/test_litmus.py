@@ -9,6 +9,7 @@ import unittest
 import subprocess
 
 testdir = os.path.abspath(os.path.dirname(__file__))
+litmus_dist = os.path.join(testdir, 'litmus-0.13')
 sys.path.insert(0, os.path.join(testdir, '..'))
 
 import pywebdav.server.server
@@ -24,10 +25,12 @@ class Test(unittest.TestCase):
 
         self.rundir = tempfile.mkdtemp()
         self._ensure_litmus()
+        shutil.copyfile(
+            os.path.join(litmus_dist, "htdocs", "foo"),
+            os.path.join(self.rundir, "foo"))
+
 
     def _ensure_litmus(self):
-
-        litmus_dist = os.path.join(testdir, 'litmus-0.13')
         self.litmus = os.path.join(litmus_dist, 'litmus')
         if not os.path.exists(self.litmus):
             print('Compiling litmus test suite')
@@ -37,11 +40,11 @@ class Test(unittest.TestCase):
             with tarfile.open(litmus_dist + '.tar.gz') as tf:
                 tf.extractall(path=testdir)
             ret = subprocess.call(['sh', './configure'], cwd=litmus_dist)
-            # assert ret == 0
+            assert ret == 0
             ret = subprocess.call(['make'], cwd=litmus_dist)
-            # assert ret == 0
+            assert ret == 0
             litmus = os.path.join(litmus_dist, 'litmus')
-            # assert os.path.exists(litmus)
+            assert os.path.exists(self.litmus)
 
     def tearDown(self):
         print("Cleaning up tempdir")
@@ -50,6 +53,7 @@ class Test(unittest.TestCase):
     def test_run_litmus(self):
 
         result = []
+        errors = []
         proc = None
         try:
             print('Starting davserver')
@@ -62,28 +66,39 @@ class Test(unittest.TestCase):
             # Run Litmus
             print('Running litmus')
             try:
-                ret = subprocess.call([self.litmus, 'http://localhost:%d' % port, user, password])
-                results = subprocess.check_output([self.litmus, 'http://localhost:%d' % port, user, password])
+                ret = subprocess.run(
+                        [self.litmus, "-k", 'http://localhost:%d' % port, user, password],
+                        capture_output=True,
+                        check=True,
+                        env=dict(
+                            TESTROOT=litmus_dist,
+                            HTDOCS=self.rundir
+                        )
+                    )
+                results = ret.stdout
             except subprocess.CalledProcessError as ex:
                 results = ex.output
-            lines = results.decode().split('\n')
+            lines = results.decode("latin-1").split('\n')
             assert len(lines), "No litmus output"
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
                 if len(re.findall('^ *\d+\.', line)):
-                    assert line.endswith('pass'), line
+                    if not line.endswith('pass'):
+                        errors.append(line)
 
         finally:
             print('\n'.join(result))
 
             print('Stopping davserver')
             self.davserver_proc.kill()
+        assert len(errors) == 0, "\n".join(errors)
 
 
     def test_run_litmus_noauth(self):
 
         result = []
+        errors = []
         proc = None
         try:
             print('Starting davserver')
@@ -96,20 +111,30 @@ class Test(unittest.TestCase):
             # Run Litmus
             print('Running litmus')
             try:
-                ret = subprocess.call([self.litmus, 'http://localhost:%d' % port])
-                results = subprocess.check_output([self.litmus, 'http://localhost:%d' % port])
+                ret = subprocess.run(
+                        [self.litmus, "-k", 'http://localhost:%d' % port],
+                        capture_output=True,
+                        check=True,
+                        env=dict(
+                            TESTROOT=litmus_dist,
+                            HTDOCS=self.rundir
+                        )
+                    )
+                results = ret.stdout
             except subprocess.CalledProcessError as ex:
                 results = ex.output
-            lines = results.decode().split('\n')
+            lines = results.decode("latin-1").split('\n')
             assert len(lines), "No litmus output"
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
                 if len(re.findall('^ *\d+\.', line)):
-                    assert line.endswith('pass'), line
+                    if not line.endswith('pass'):
+                        errors.append(line)
 
         finally:
             print('\n'.join(result))
 
             print('Stopping davserver')
             self.davserver_proc.kill()
+        assert len(errors) == 0, "\n".join(errors)
