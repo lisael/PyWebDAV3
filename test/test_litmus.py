@@ -57,8 +57,14 @@ class Test(unittest.TestCase):
         proc = None
         try:
             print('Starting davserver')
-            davserver_cmd = [sys.executable, os.path.join(testdir, '..', 'pywebdav', 'server', 'server.py'), '-D',
-                             self.rundir, '-u', user, '-p', password, '-H', 'localhost', '--port', str(port)]
+            davserver_cmd = [
+                    sys.executable,
+                    os.path.join(testdir, '..', 'pywebdav', 'server', 'server.py'),
+                    '-D', self.rundir,
+                    '-u', user,
+                    '-p', password,
+                    '-H', 'localhost',
+                    '--port', str(port)]
             self.davserver_proc = subprocess.Popen(davserver_cmd)
             # Ensure davserver has time to startup
             time.sleep(1)
@@ -92,7 +98,10 @@ class Test(unittest.TestCase):
 
             print('Stopping davserver')
             self.davserver_proc.kill()
-        assert len(errors) == 0, "\n".join(errors)
+        assert len(errors) == 0, ("\n -- {} errors, {} skipped:\n".format(
+                len(list(filter(lambda x: " FAIL (" in x, errors))),
+                len(list(filter(lambda x: " SKIPPED" in x, errors))),
+                ) + "\n".join(errors))
 
 
     def test_run_litmus_noauth(self):
@@ -102,8 +111,13 @@ class Test(unittest.TestCase):
         proc = None
         try:
             print('Starting davserver')
-            davserver_cmd = [sys.executable, os.path.join(testdir, '..', 'pywebdav', 'server', 'server.py'), '-D',
-                             self.rundir, '-n', '-H', 'localhost', '--port', str(port)]
+            davserver_cmd = [
+                    sys.executable,
+                    os.path.join(testdir, '..', 'pywebdav', 'server', 'server.py'),
+                    '-D', self.rundir,
+                    '-n',
+                    '-H', 'localhost',
+                    '--port', str(port)]
             self.davserver_proc = subprocess.Popen(davserver_cmd)
             # Ensure davserver has time to startup
             time.sleep(1)
@@ -137,4 +151,7 @@ class Test(unittest.TestCase):
 
             print('Stopping davserver')
             self.davserver_proc.kill()
-        assert len(errors) == 0, "\n".join(errors)
+        assert len(errors) == 0, ("\n -- {} errors, {} skipped:\n".format(
+                len(list(filter(lambda x: " FAIL (" in x, errors))),
+                len(list(filter(lambda x: " SKIPPED" in x, errors))),
+                ) + "\n".join(errors))
