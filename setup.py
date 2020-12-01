@@ -7,7 +7,9 @@ import os
 
 import pywebdav
 
-CHANGES = open(os.path.join(os.path.dirname(__file__), 'doc/Changes'), 'r', encoding='utf-8').read()
+_CH_FILE = os.path.join(os.path.dirname(__file__), 'doc/Changes')
+with open(_CH_FILE, 'r', encoding='utf-8') as f:
+    CHANGES = f.read()
 
 DOC = """\
 WebDAV library for python3
@@ -100,5 +102,5 @@ setup(name='PyWebDAV3',
       entry_points={
         'console_scripts': ['davserver = pywebdav.server.server:run']
         },
-      install_requires = ['six']
+      install_requires=['six', "starlette", "uvicorn"]
       )
